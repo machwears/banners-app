@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Support · Banners</title><style>
+<title>Banners: one video, everyone sees it</title><style>
 :root{--bg:#fff;--fg:#141416;--muted:#6b6b72;--accent:#ff4f38}
 @media (prefers-color-scheme:dark){:root{--bg:#0c0c0e;--fg:#f2f2f4;--muted:#9a9aa2}}
 body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
@@ -11,9 +11,42 @@ header a{font-weight:800;font-size:20px;color:var(--fg);text-decoration:none;let
 h1{font-size:32px;line-height:1.2;letter-spacing:-.5px;margin:0 0 8px}
 .meta{color:var(--muted);margin-top:0}
 a{color:var(--accent)} li{margin:6px 0} nav{margin-top:48px;color:var(--muted);font-size:15px} nav a{margin-right:16px}
+.hero{margin:8px 0 56px} .big{font-size:48px;line-height:1.05;letter-spacing:-1.5px;margin:0 0 16px}
+.lead{font-size:19px;color:var(--muted);margin:0 0 24px}
+.wl{display:flex;gap:10px;flex-wrap:wrap}
+.wl input{flex:1 1 220px;min-width:0;font:inherit;padding:14px 18px;border-radius:999px;border:1px solid color-mix(in srgb,var(--fg) 20%,transparent);background:transparent;color:var(--fg)}
+.wl button{font:inherit;font-weight:700;padding:14px 24px;border-radius:999px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+.wl button:disabled{opacity:.6} h2{font-size:24px;margin:0 0 8px}
 </style></head>
 <body><main><header><img src="icon.png" alt=""><a href="./">banners</a></header>
-<h1>Support</h1>
+<section class="hero">
+<h1 class="big">One video.<br>Everyone sees it.</h1>
+<p class="lead">Bid to put your 30-second video on every phone running Banners for 3 minutes. Bids start at $1, and the price only goes up.</p>
+<form id="wl" class="wl" autocomplete="on">
+  <input id="wl-email" type="email" required placeholder="you@email.com" aria-label="Email address">
+  <button type="submit">Notify me</button>
+</form>
+<p id="wl-msg" class="meta" aria-live="polite">Coming soon to the App Store. Get an email the day it launches.</p>
+</section>
+<script>
+const f=document.getElementById('wl'), m=document.getElementById('wl-msg');
+f.addEventListener('submit', async e => {
+  e.preventDefault();
+  const email=document.getElementById('wl-email').value.trim();
+  f.querySelector('button').disabled=true;
+  try {
+    const r=await fetch('https://voarfpcomwmhxqduyqmf.supabase.co/rest/v1/waitlist', {
+      method:'POST',
+      headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvYXJmcGNvbXdtaHhxZHV5cW1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0Njk5MjAsImV4cCI6MjA4NTA0NTkyMH0.P97xJipPctcm0j0NYOWHNVXmTTg9YFKuHKHSDe-kPJo','Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({email, source:new URLSearchParams(location.search).get('ref')||'site'})
+    });
+    m.textContent = r.ok || r.status===409 ? "You're on the list. We'll email you at launch." : "That email doesn't look right. Try again?";
+    if (r.ok || r.status===409) f.reset();
+  } catch { m.textContent="Couldn't reach the server. Try again in a moment."; }
+  f.querySelector('button').disabled=false;
+});
+</script>
+<h2>Support</h2>
 <p class="meta">Banners: one video, on every screen.</p>
 <p>Questions, a problem with a purchase, or want to report a video? Email us at <a href="mailto:bannerssuport@gmail.com">bannerssuport@gmail.com</a>. We reply within 2 business days, and handle reported videos within 24 hours.</p>
 <ul>
