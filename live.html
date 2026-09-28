@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Live now · Banners</title>
+<meta property="og:title" content="Live now on Banners">
+<meta property="og:description" content="One video. Everyone sees it. Watch what's playing right now.">
+<meta property="og:image" content="https://machwears.github.io/banners-app/icon.png">
+<style>
+:root{--bg:#0c0c0e;--fg:#f2f2f4;--muted:#9a9aa2;--accent:#ff4f38}
+*{box-sizing:border-box} html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Rounded",system-ui,sans-serif}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
+video{width:100%;height:100%;object-fit:contain;background:#000}
+@media (max-aspect-ratio:9/16){video{object-fit:cover}}
+.top{position:fixed;top:0;left:0;right:0;padding:max(16px,env(safe-area-inset-top)) 16px 40px;display:flex;justify-content:space-between;align-items:flex-start;background:linear-gradient(#000a,#0000)}
+.brand{font-weight:800;font-size:22px;letter-spacing:-.4px;color:#fff;text-decoration:none}
+.chip{display:inline-block;margin-top:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:#ffffff26;backdrop-filter:blur(12px)}
+.live{font-size:12px;font-weight:800;letter-spacing:1px;padding:5px 10px;border-radius:999px;background:#ff3b30}
+.sound{margin-top:8px;border:0;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;color:#fff;background:#ffffff33;backdrop-filter:blur(12px);cursor:pointer}
+.panel{position:fixed;left:0;right:0;bottom:0;padding:48px 16px max(16px,env(safe-area-inset-bottom));background:linear-gradient(#0000,#000c)}
+.card{max-width:520px;margin:0 auto;padding:18px;border-radius:24px;background:#16161acc;backdrop-filter:blur(20px);border:1px solid #ffffff14}
+.card h1{font-size:22px;line-height:1.2;margin:0 0 4px;letter-spacing:-.3px}
+.meta{color:var(--muted);font-size:14px;margin:0 0 14px}
+.wl{display:flex;gap:8px;flex-wrap:wrap}
+.wl input{flex:1 1 180px;min-width:0;font:inherit;padding:12px 16px;border-radius:999px;border:1px solid #ffffff2a;background:#0000;color:#fff}
+.wl button{font:inherit;font-weight:700;padding:12px 20px;border-radius:999px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+.msg{color:var(--muted);font-size:13px;margin:10px 0 0}
+</style></head>
+<body>
+<div class="stage"><video id="v" muted playsinline loop autoplay></video></div>
+<div class="top">
+  <div><a class="brand" href="./">banners</a><br><span id="watching" class="chip" hidden></span></div>
+  <div style="text-align:right"><span class="live">LIVE</span><br><button id="sound" class="sound">Tap for sound</button></div>
+</div>
+<div class="panel"><div class="card">
+  <h1>One video. Everyone sees it.</h1>
+  <p class="meta" id="meta">Loading what's playing…</p>
+  <form id="wl" class="wl"><input id="em" type="email" required placeholder="you@email.com" aria-label="Email"><button>Get the app</button></form>
+  <p class="msg" id="msg">Coming soon to the App Store. Leave your email and we'll tell you the day it's out.</p>
+</div></div>
+<script type="module">
+const URL_ = "https://voarfpcomwmhxqduyqmf.supabase.co", KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvYXJmcGNvbXdtaHhxZHV5cW1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0Njk5MjAsImV4cCI6MjA4NTA0NTkyMH0.P97xJipPctcm0j0NYOWHNVXmTTg9YFKuHKHSDe-kPJo";
+const v = document.getElementById("v"), meta = document.getElementById("meta");
+let current = null, anchor = 0, duration = 0, skew = 0;
+const usd = c => "$" + (c / 100).toFixed(2).replace(/\.00$/, "");
+function syncTime() {
+  if (!duration) return;
+  const offset = (((Date.now() + skew) / 1000 - anchor) % duration + duration) % duration;
+  if (Math.abs(v.currentTime - offset) > 1.5) v.currentTime = offset;
+}
+async function refresh() {
+  try {
+    const t0 = Date.now();
+    const r = await fetch(URL_ + "/rest/v1/rpc/get_public_stage", {method: "POST", headers: {apikey: KEY, "Content-Type": "application/json"}, body: "{}"});
+    const s = await r.json();
+    skew = Date.parse(s.server_now) - (t0 + Date.now()) / 2;
+    anchor = Date.parse(s.live_started_at) / 1000; duration = Number(s.live_duration_s) || 0;
+    if (s.live_video_path && s.live_video_path !== current) {
+      current = s.live_video_path;
+      v.src = URL_ + "/storage/v1/object/public/videos/" + s.live_video_path;
+      v.addEventListener("loadedmetadata", syncTime, {once: true});
+      v.play().catch(() => {});
+    }
+    meta.textContent = (s.queue_count > 0 ? s.queue_count + " in line · " : "") + "next bid from " + usd(s.min_bid_cents) + " · every video plays 3 minutes";
+  } catch { meta.textContent = "Couldn't reach the stage. Retrying…"; }
+}
+refresh(); setInterval(refresh, 10000); setInterval(syncTime, 5000);
+document.getElementById("sound").onclick = e => { v.muted = !v.muted; e.target.textContent = v.muted ? "Tap for sound" : "Sound on"; v.play(); };
+document.getElementById("wl").onsubmit = async e => {
+  e.preventDefault();
+  const r = await fetch(URL_ + "/rest/v1/waitlist", {method: "POST", headers: {apikey: KEY, "Content-Type": "application/json", Prefer: "return=minimal"},
+    body: JSON.stringify({email: document.getElementById("em").value.trim(), source: new URLSearchParams(location.search).get("ref") || "live"})});
+  document.getElementById("msg").textContent = r.ok || r.status === 409 ? "You're on the list. We'll email you at launch." : "That email doesn't look right. Try again?";
+};
+// Live viewer count (Realtime Presence): only shown once it's a real crowd.
+const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+const sb = createClient(URL_, KEY);
+const ch = sb.channel("viewers", { config: { presence: { key: crypto.randomUUID() } } });
+ch.on("presence", { event: "sync" }, () => {
+  const n = Object.keys(ch.presenceState()).length, el = document.getElementById("watching");
+  el.hidden = n < 10; el.textContent = "👁 " + n + " watching";
+}).subscribe(status => { if (status === "SUBSCRIBED") ch.track({ at: Date.now() }); });
+</script>
+</body></html>
